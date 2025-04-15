@@ -114,5 +114,3 @@ This project is licensed under the MIT License. See the LICENSE file for details
 4. Configure environment variables in a [.env](http://_vscodecontentref_/5) file.
 5. Initialize the database with `flask db upgrade`.
 6. Run the application using `flask run` for development or `gunicorn` for production.
-
-Let me know if you need further assistance!
