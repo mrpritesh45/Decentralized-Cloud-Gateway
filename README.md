@@ -1,6 +1,6 @@
 # Decentralized Resource Gateway
 
-A Flask-based web application that serves as a decentralized resource gateway. This project leverages Flask, SQLAlchemy, and other Python libraries to provide a robust and scalable solution for managing resources in a decentralized manner.
+A Flask-based web application that serves as a decentralized resource gateway. This project uses Flask, SQLAlchemy, and other Python libraries to provide a robust and scalable solution for managing resources in a decentralized manner.
 
 ---
 
@@ -27,7 +27,7 @@ Before running the project, ensure you have the following installed:
 
 ## Installation
 
-Follow these steps to set up and run the project:
+ Steps to set up and run the project:
 
 ### 1. Clone the Repository
 ```bash
