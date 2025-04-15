@@ -1,0 +1,245 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="fas fa-cogs me-2"></i>Resource Management
+</h1>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Add New Resource
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="alert-placeholder"></div>
+                
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="resource_type" class="form-label">{{ form.resource_type.label }}</label>
+                        {{ form.resource_type(class="form-select", id="resource_type") }}
+                        {% if form.resource_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.resource_type.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">{{ form.amount.label }}</label>
+                        {{ form.amount(class="form-control", id="amount", placeholder="Enter amount") }}
+                        {% if form.amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.amount.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text" id="amount-help">
+                            For CPU cores, enter number of cores.
+                            For Memory/Storage, enter amount in GB.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.availability(class="form-check-input", id="availability") }}
+                        <label class="form-check-label" for="availability">
+                            {{ form.availability.label }}
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Resource Sharing Guide
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">What can you share?</h6>
+                <ul>
+                    <li><strong>CPU Cores</strong> - Processing power for computations</li>
+                    <li><strong>Memory (RAM)</strong> - For running applications</li>
+                    <li><strong>Storage Space</strong> - For file storage</li>
+                </ul>
+                
+                <h6 class="card-subtitle mb-2 mt-3">Tips for sharing</h6>
+                <ul>
+                    <li>Share only resources that are not critical to your system</li>
+                    <li>You can disable sharing anytime</li>
+                    <li>All resource sharing is secure and monitored</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-server me-2"></i>Your Shared Resources
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if resources %}
+                <div class="table-responsive">
+                    <table class="table table-hover resource-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resource in resources %}
+                            <tr data-resource-id="{{ resource.id }}">
+                                <td class="resource-type">{{ resource.resource_type|capitalize }}</td>
+                                <td class="resource-amount">{{ resource.amount }}</td>
+                                <td class="resource-availability">
+                                    {% if resource.availability %}
+                                    <span class="badge bg-success">Available</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        Allocated to User #{{ resource.allocated_to }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ resource.created_at|formatdatetime("%Y-%m-%d") }}</td>
+                                <td>{{ resource.updated_at|formatdatetime("%Y-%m-%d %H:%M") }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-primary edit-resource-btn" data-resource-id="{{ resource.id }}" {% if not resource.availability %}disabled{% endif %}>
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger delete-resource-btn" data-resource-id="{{ resource.id }}" {% if not resource.availability %}disabled{% endif %}>
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>You haven't shared any resources yet. 
+                    Use the form on the left to add a resource.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Resource Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-white bg-primary">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">CPU Cores</h6>
+                                <h3 class="card-text">
+                                    {{ resources|selectattr('resource_type', 'equalto', 'cpu')|sum(attribute='amount')|round(2) }}
+                                </h3>
+                                <p class="card-text">Total Shared</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-white bg-success">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">Memory (GB)</h6>
+                                <h3 class="card-text">
+                                    {{ resources|selectattr('resource_type', 'equalto', 'memory')|sum(attribute='amount')|round(2) }}
+                                </h3>
+                                <p class="card-text">Total Shared</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card text-white bg-info">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">Storage (GB)</h6>
+                                <h3 class="card-text">
+                                    {{ resources|selectattr('resource_type', 'equalto', 'storage')|sum(attribute='amount')|round(2) }}
+                                </h3>
+                                <p class="card-text">Total Shared</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Resource Modal -->
+<div class="modal fade" id="editResourceModal" tabindex="-1" aria-labelledby="editResourceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editResourceModalLabel">Edit Resource</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-resource-form">
+                    <input type="hidden" id="edit-resource-id" value="">
+                    
+                    <div class="mb-3">
+                        <label for="edit-resource-type" class="form-label">Resource Type</label>
+                        <select class="form-select" id="edit-resource-type">
+                            <option value="cpu">CPU Cores</option>
+                            <option value="memory">Memory (GB)</option>
+                            <option value="storage">Storage (GB)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit-resource-amount" class="form-label">Amount</label>
+                        <input type="number" class="form-control" id="edit-resource-amount" min="0.1" step="0.1">
+                        <div class="form-text">
+                            For CPU cores, enter number of cores.
+                            For Memory/Storage, enter amount in GB.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="edit-resource-availability">
+                        <label class="form-check-label" for="edit-resource-availability">
+                            Available for Sharing
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-edit-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/resource_management.js') }}"></script>
+{% endblock %}

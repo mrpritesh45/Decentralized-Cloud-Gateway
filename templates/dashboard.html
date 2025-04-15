@@ -1,0 +1,287 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+</h1>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-users me-2"></i>Users
+                </h5>
+                <h2 class="card-text" id="user-count">{{ stats.user_count }}</h2>
+                <p class="card-text">Active participants</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-server me-2"></i>Resources
+                </h5>
+                <h2 class="card-text" id="resource-count">{{ stats.resource_count }}</h2>
+                <p class="card-text">Shared in the network</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card bg-warning text-dark">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-exchange-alt me-2"></i>Requests
+                </h5>
+                <h2 class="card-text" id="request-count">{{ stats.request_count }}</h2>
+                <p class="card-text">Total resource requests</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-check-circle me-2"></i>Matched
+                </h5>
+                <h2 class="card-text" id="matched-count">{{ stats.approved_requests }}</h2>
+                <p class="card-text">Successfully matched</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resource Utilization -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-microchip me-2"></i>Resource Utilization
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="alert-placeholder"></div>
+                
+                <h6>CPU Utilization</h6>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div id="cpu-progress" class="progress-bar bg-primary" role="progressbar" 
+                         style="width: {{ stats.utilization_rate.cpu }}%;" 
+                         aria-valuenow="{{ stats.utilization_rate.cpu }}" 
+                         aria-valuemin="0" aria-valuemax="100">
+                        <span id="cpu-utilization">{{ stats.utilization_rate.cpu|round(2) }}%</span>
+                    </div>
+                </div>
+                
+                <h6>Memory Utilization</h6>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div id="memory-progress" class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ stats.utilization_rate.memory }}%;" 
+                         aria-valuenow="{{ stats.utilization_rate.memory }}" 
+                         aria-valuemin="0" aria-valuemax="100">
+                        <span id="memory-utilization">{{ stats.utilization_rate.memory|round(2) }}%</span>
+                    </div>
+                </div>
+                
+                <h6>Storage Utilization</h6>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div id="storage-progress" class="progress-bar bg-info" role="progressbar" 
+                         style="width: {{ stats.utilization_rate.storage }}%;" 
+                         aria-valuenow="{{ stats.utilization_rate.storage }}" 
+                         aria-valuemin="0" aria-valuemax="100">
+                        <span id="storage-utilization">{{ stats.utilization_rate.storage|round(2) }}%</span>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-4 text-center">
+                        <h6>CPU Available</h6>
+                        <h4 id="cpu-available" class="text-primary">{{ stats.available_resources.cpu|round(2) }}</h4>
+                        <p>cores</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h6>Memory Available</h6>
+                        <h4 id="memory-available" class="text-success">{{ stats.available_resources.memory|round(2) }}</h4>
+                        <p>GB</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h6>Storage Available</h6>
+                        <h4 id="storage-available" class="text-info">{{ stats.available_resources.storage|round(2) }}</h4>
+                        <p>GB</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Resource Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="resource-usage-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Your Resources and Requests -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-share-alt me-2"></i>Your Shared Resources
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if resources %}
+                <div class="table-responsive">
+                    <table class="table table-hover resource-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resource in resources %}
+                            <tr>
+                                <td>{{ resource.resource_type|capitalize }}</td>
+                                <td>{{ resource.amount }}</td>
+                                <td>
+                                    {% if resource.availability %}
+                                    <span class="badge bg-success">Available</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">Allocated</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ resource.created_at|formatdatetime("%Y-%m-%d") }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>You haven't shared any resources yet.
+                    <a href="{{ url_for('resource_management') }}" class="alert-link">Share now</a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('resource_management') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Add Resources
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="row h-100">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-dark">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-exchange-alt me-2"></i>Resource Requests Status
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="request-status-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-dark">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-download me-2"></i>Allocated to You
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if allocated %}
+                        <div class="table-responsive">
+                            <table class="table table-hover resource-table">
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Since</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for resource in allocated %}
+                                    <tr>
+                                        <td>{{ resource.resource_type|capitalize }}</td>
+                                        <td>{{ resource.amount }}</td>
+                                        <td>{{ resource.allocation_time|formatdatetime("%Y-%m-%d") }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger release-btn" 
+                                                    data-resource-id="{{ resource.id }}">
+                                                Release
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>You don't have any allocated resources.
+                            <a href="{{ url_for('resource_requests') }}" class="alert-link">Request now</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up release resource buttons
+        document.querySelectorAll('.release-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const resourceId = this.getAttribute('data-resource-id');
+                if (confirm('Are you sure you want to release this resource?')) {
+                    fetch(`/api/release-resource/${resourceId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Reload the page to reflect changes
+                            window.location.reload();
+                        } else {
+                            alert(`Error: ${data.error}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error releasing resource:', error);
+                        alert('An error occurred while releasing the resource');
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

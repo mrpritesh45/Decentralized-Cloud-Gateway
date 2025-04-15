@@ -1,0 +1,321 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="fas fa-exchange-alt me-2"></i>Resource Requests
+</h1>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-paper-plane me-2"></i>Request Resources
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="alert-placeholder"></div>
+                
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        <label for="resource_type" class="form-label">{{ form.resource_type.label }}</label>
+                        {{ form.resource_type(class="form-select", id="resource_type") }}
+                        {% if form.resource_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.resource_type.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">{{ form.amount.label }}</label>
+                        {{ form.amount(class="form-control", id="amount", placeholder="Enter amount") }}
+                        {% if form.amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.amount.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text" id="amount-help">
+                            For CPU cores, enter number of cores.
+                            For Memory/Storage, enter amount in GB.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="duration" class="form-label">{{ form.duration.label }}</label>
+                        {{ form.duration(class="form-control", id="duration", placeholder="Optional") }}
+                        {% if form.duration.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.duration.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>Request Tips
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2">For faster matching:</h6>
+                <ul>
+                    <li>Request only what you need</li>
+                    <li>Set a reasonable duration</li>
+                    <li>Check available resources before requesting</li>
+                </ul>
+                
+                <h6 class="card-subtitle mb-2 mt-3">Available Resources:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Resource</th>
+                                <th>Available</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resource_type, amount in stats.available_resources.items() %}
+                            <tr>
+                                <td>{{ resource_type|capitalize }}</td>
+                                <td>{{ amount|round(2) }} {% if resource_type == 'cpu' %}cores{% else %}GB{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-alt me-2"></i>Your Resource Requests
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if requests %}
+                <div class="table-responsive">
+                    <table class="table table-hover resource-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Requested</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in requests %}
+                            <tr>
+                                <td>{{ request.resource_type|capitalize }}</td>
+                                <td>{{ request.amount }}</td>
+                                <td>
+                                    {% if request.duration %}
+                                    {{ request.duration }} hours
+                                    {% else %}
+                                    Indefinite
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.status == "pending" %}
+                                    <span class="badge status-badge-pending">Pending</span>
+                                    {% elif request.status == "approved" %}
+                                    <span class="badge status-badge-approved">Approved</span>
+                                    {% elif request.status == "rejected" %}
+                                    <span class="badge status-badge-rejected">Rejected</span>
+                                    {% elif request.status == "completed" %}
+                                    <span class="badge status-badge-completed">Completed</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ request.created_at|formatdatetime("%Y-%m-%d") }}</td>
+                                <td>
+                                    {% if request.status == "pending" or request.status == "approved" %}
+                                    <button class="btn btn-sm btn-danger cancel-request-btn" 
+                                            data-request-id="{{ request.id }}">
+                                        Cancel
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-secondary" disabled>
+                                        {{ request.status|capitalize }}
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>You haven't made any resource requests yet. 
+                    Use the form on the left to request resources.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-download me-2"></i>Resources Allocated to You
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if allocated %}
+                <div class="table-responsive">
+                    <table class="table table-hover resource-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Allocated Since</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resource in allocated %}
+                            <tr>
+                                <td>{{ resource.resource_type|capitalize }}</td>
+                                <td>{{ resource.amount }}</td>
+                                <td>{{ resource.allocation_time|formatdatetime("%Y-%m-%d %H:%M") }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger release-resource-btn" 
+                                            data-resource-id="{{ resource.id }}">
+                                        Release
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>You don't have any resources allocated to you yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-globe me-2"></i>Available Resources in Network
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if available %}
+                <div class="table-responsive">
+                    <table class="table table-hover resource-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Shared By</th>
+                                <th>Shared Since</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resource in available %}
+                            <tr>
+                                <td>{{ resource.resource_type|capitalize }}</td>
+                                <td>{{ resource.amount }}</td>
+                                <td>User #{{ resource.user_id }}</td>
+                                <td>{{ resource.created_at|formatdatetime("%Y-%m-%d") }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>No resources are currently available in the network.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up cancel request buttons
+        document.querySelectorAll('.cancel-request-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const requestId = this.getAttribute('data-request-id');
+                if (confirm('Are you sure you want to cancel this request?')) {
+                    fetch(`/api/cancel-request/${requestId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Reload the page to reflect changes
+                            window.location.reload();
+                        } else {
+                            alert(`Error: ${data.error}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error cancelling request:', error);
+                        alert('An error occurred while cancelling the request');
+                    });
+                }
+            });
+        });
+        
+        // Set up release resource buttons
+        document.querySelectorAll('.release-resource-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const resourceId = this.getAttribute('data-resource-id');
+                if (confirm('Are you sure you want to release this resource?')) {
+                    fetch(`/api/release-resource/${resourceId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Reload the page to reflect changes
+                            window.location.reload();
+                        } else {
+                            alert(`Error: ${data.error}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error releasing resource:', error);
+                        alert('An error occurred while releasing the resource');
+                    });
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

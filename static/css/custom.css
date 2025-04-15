@@ -1,0 +1,85 @@
+/* Custom styles for the application */
+.resource-card {
+    transition: transform 0.3s ease-in-out;
+}
+
+.resource-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.stats-card {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: scale(1.03);
+}
+
+.status-badge-pending {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-badge-approved {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-badge-rejected {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status-badge-completed {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 30px;
+}
+
+/* Responsive design for small screens */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+    
+    .resource-table {
+        font-size: 0.9rem;
+    }
+}
+
+/* For very small screens */
+@media (max-width: 576px) {
+    .chart-container {
+        height: 200px;
+    }
+    
+    .resource-table {
+        font-size: 0.8rem;
+    }
+    
+    .card-title {
+        font-size: 1.1rem;
+    }
+}
+
+/* Enhance dark mode */
+[data-bs-theme=dark] .card {
+    background-color: var(--bs-gray-800);
+    border-color: var(--bs-gray-700);
+}
+
+[data-bs-theme=dark] .table {
+    color: var(--bs-light);
+    border-color: var(--bs-gray-700);
+}
+
+[data-bs-theme=dark] .progress {
+    background-color: var(--bs-gray-700);
+}
